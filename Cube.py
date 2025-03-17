@@ -81,6 +81,12 @@ class Rubiks:
     def load_prev(self):
         self = self.previous_state
 
+    def stringify(self):
+        return ''.join(list(itertools.chain(self.faces['F'] + self.faces['B'] + self.faces['L'] + self.faces['R'] + self.faces['T'] +  self.faces['D'])))
+        # return ''.join(            
+        #     self.faces['F'][0:9],
+        #     )
+
     def look_move_ahead(self):
         for action in self.moves:
             action()
@@ -299,60 +305,62 @@ class Rubiks:
             self.move_B()
 
 
-cube = Rubiks("WWWWWWWWWYYYYYYYYYOOOOOOOOORRRRRRRRRGGGGGGGGGBBBBBBBBB")
-# cube.move_B()
-# cube.move_D_prime()
-# cube.move_L_prime()
-# cube.move_F_prime()
+# cube = Rubiks("WWWWWWWWWYYYYYYYYYOOOOOOOOORRRRRRRRRGGGGGGGGGBBBBBBBBB")
 
+# print(cube.stringify())
+# # cube.move_B()
+# # cube.move_D_prime()
+# # cube.move_L_prime()
+# # cube.move_F_prime()
+
+# # printRubiks(cube)
+# # cube.checkCompletion()
+# cube.scramble(1)
+
+# x = cube.count_completed_faces()
+# y = cube.count_correct_pieces()
+# print("Completed faces =", x , "\n"
+#         "Completed pieces = ", y, "\n")
+
+# cube.best_score = (5 * cube.count_completed_faces() ) + 2 * cube.count_correct_pieces()  # Weighted score
+
+# Completed = False
+# max_moves = 1
+# moves = 0
+
+
+# print("*** Starting Rubiks ***\n")
 # printRubiks(cube)
-# cube.checkCompletion()
-cube.scramble(1)
+# print("*** Starting Rubiks ***\n")
 
-x = cube.count_completed_faces()
-y = cube.count_correct_pieces()
-print("Completed faces =", x , "\n"
-        "Completed pieces = ", y, "\n")
+# cube.completed = cube.checkCompletion()
 
-cube.best_score = (5 * cube.count_completed_faces() ) + 2 * cube.count_correct_pieces()  # Weighted score
+# print("*** Starting score ***\n", str(cube.best_score))
+# while cube.completed == False:
+#     print("\nMove #", moves + 1, "\n")
 
-Completed = False
-max_moves = 64
-moves = 0
+#     cube.check_best_next_move(x, y)
+#     print("New score = ", str(cube.best_score))
 
+#     x = cube.count_completed_faces()
+#     y = cube.count_correct_pieces()
+#     print("Completed faces =", x , "\n"
+#           "Completed pieces = ", y, "\n")
 
-print("*** Starting Rubiks ***\n")
-printRubiks(cube)
-print("*** Starting Rubiks ***\n")
+#     moves = moves + 1
 
-cube.completed = cube.checkCompletion()
+#     # print(cube.checkCompletion())
+#     # cube.checkCompletion()
 
-print("*** Starting score ***\n", str(cube.best_score))
-while cube.completed == False:
-    print("\nMove #", moves + 1, "\n")
+#     if cube.completed == True:
+#         print("***\nSolving COMPLETED!\n***\n Rubiks cube solved in", str(moves), " moves.")
+#         break
 
-    cube.check_best_next_move(x, y)
-    print("New score = ", str(cube.best_score))
-
-    x = cube.count_completed_faces()
-    y = cube.count_correct_pieces()
-    print("Completed faces =", x , "\n"
-          "Completed pieces = ", y, "\n")
-
-    moves = moves + 1
-
-    # print(cube.checkCompletion())
-    # cube.checkCompletion()
-
-    if cube.completed == True:
-        print("***\nSolving COMPLETED!\n***\n Rubiks cube solved in", str(moves), " moves.")
-        break
-
-    elif cube.completed == False:
-        if moves >= max_moves:
-            print("Solving FALED. Could not solve cube in", str(moves), "moves.")
-            printRubiks(cube)
-            break
-        else:
-            continue
+#     elif cube.completed == False:
+#         if moves >= max_moves:
+#             print("Solving FALED. Could not solve cube in", str(moves), "moves.")
+#             printRubiks(cube)
+#             break
+#         else:
+#             continue
         
