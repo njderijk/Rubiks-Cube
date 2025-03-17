@@ -1,6 +1,8 @@
 import numpy as np
 import random
 import itertools
+import copy
+import timeit
 
 solved_string = "WWWWWWWWWYYYYYYYYYOOOOOOOOORRRRRRRRRGGGGGGGGGBBBBBBBBB"
 
@@ -23,7 +25,10 @@ class Rubiks:
         if len(state) != 54:
             raise ValueError("Invalid cube state: must be a 54-character string.")
 
-        self.state = state
+        self.previous_state = ''
+        self.best_score = 0
+
+        self.completed = ''
         
         self.faces = {
             'F': list(state[0:9]),   # Front
@@ -35,7 +40,12 @@ class Rubiks:
         }
 
         self.moves = [
-            self.move_T, self.move_T_prime, self.move_D, self.move_D_prime, self.move_F, self.move_F_prime, self.move_B, self.move_B_prime, self.move_L, self.move_L_prime, self.move_R, self.move_R_prime
+            self.move_T, self.move_T_prime, 
+            self.move_D, self.move_D_prime, 
+            self.move_F, self.move_F_prime, 
+            self.move_B, self.move_B_prime, 
+            self.move_L, self.move_L_prime, 
+            self.move_R, self.move_R_prime
         ]
 
     def random_move(self):
@@ -43,6 +53,11 @@ class Rubiks:
         print("executing random move: " + action.__name__)
         self = action()
         return self
+    
+    def reset_state(self, action):
+        action()
+        action()
+        action()
 
     def scramble(self, n):
         combined_lists = list(itertools.chain(self.faces['F'] + self.faces['B'] + self.faces['L'] + self.faces['R'] + self.faces['T'] +  self.faces['D']))
@@ -59,41 +74,143 @@ class Rubiks:
             'D': list(combined_lists[45:54])  # Down/Bottom
         }
 
+    def save(self):
+        new_s = copy.deepcopy(self)
+        return new_s
+
+    def load_prev(self):
+        self = self.previous_state
+
+    def look_move_ahead(self):
+        for action in self.moves:
+            action()
+            score = (10 * self.count_completed_faces() ) + 2 * self.count_correct_pieces()  # Weighted score
+            if score > self.best_score:
+                self.reset_state(action)
+                action()
+                return action
+            else:
+                self.look_move_ahead()
+
+        # for action in self.moves:
+        #     # print("No better move found. Identify best move with best future potential")
+            
+        #     scores = []
+        #     actions = []
+
+        #     for first_action in self.moves:
+        #         first_action() # No action helped in a n=1 look-ahead, so perform each action and then look at consequences
+                
+        #         score = (10 * self.count_completed_faces() ) + 2 * self.count_correct_pieces()  # Weighted score
+                
+        #         if score > self.best_score:
+        #                 self.reset_state(first_action)
+        #                 first_action()
+        #                 return first_action
+        #         for second_action in self.moves:
+        #             second_action()
+        #             if self.checkCompletion() == True:
+        #                 bestAction = first_action # Because you need to do the first action to get to this point
+        #                 # self.reset_state(second_action)
+        #                 return bestAction
+
+        #             score = (10 * self.count_completed_faces() ) + 2 * self.count_correct_pieces()  # Weighted score
+                    
+        #             if score > self.best_score:
+        #                 self.reset_state(second_action)
+        #                 self.reset_state(first_action)
+        #                 first_action()
+        #                 return first_action
+        #             else:
+        #                 # print("Recursived.")
+        #                 self.look_move_ahead()
+
     def check_best_next_move(self, sides, num_pieces):
-        new_state = self
-        reward = -0.1
-        best_score = -1
+        save_state = self.save()
+
         bestAction = None       
+
+        actions = []
+        scores = []
 
         for action in self.moves:
             action()
+            # print("Rubiks after performed action...")
+            # printRubiks(self)
+            # self.checkCompletion()
+            if self.checkCompletion() == True:
+                # self.reset_state(action)
+                return action
+            else:
+                score = (10 * self.count_completed_faces() ) + 2 * self.count_correct_pieces()  # Weighted score
+                scores.append(score)
+                actions.append(action)
+                self.reset_state(action)
 
-            if new_state.checkCompletion():
-                bestAction = action
+        # print(scores)
+        # print(np.argmax(scores))
+        # print("Best action = ", actions[np.argmax(scores)])        
+        # print("***\nBest action = ", actions[np.argmax(scores)], "\nBest action reward = ", max(scores), "\n***")
+
+        bestAction = actions[np.argmax(scores)]
+
+        # If the best action improves the current position, accept it as the NBM
+        if max(scores) > self.best_score:
+            self.best_score = max(scores)
+            bestAction = action
+            self = save_state
+            # self.reset_state(action)
+            bestAction()
+            return bestAction
+
         
-            solved_sides_score = 3 * (new_state.count_completed_faces() - sides)
-            solved_pieces_score = 0.5 * (new_state.count_correct_pieces() - num_pieces)
+        # If not, look one move further (make this a function in the future so we can continuously look one move further)
+        else:
+            # print("No better move found. Identify best move with best future potential")
+            
+            scores = []
+            actions = []
+            for first_action in self.moves:
+                first_action() # No action helped in a n=1 look-ahead, so perform each action and then look at consequences
+                for second_action in self.moves:
+                    second_action()
+                    if self.checkCompletion() == True:
+                        bestAction = first_action # Because you need to do the first action to get to this point
+                        # self.reset_state(second_action)
+                        return bestAction
 
-            reward += solved_sides_score
-            reward += solved_pieces_score
+                    score = (10 * self.count_completed_faces() ) + 2 * self.count_correct_pieces()  # Weighted score
+                    scores.append(score)
 
-            score = (10 * new_state.count_completed_faces() ) + 2 * new_state.count_correct_pieces()  # Weighted score
-            if score > best_score:
-                best_score = score
+                    actions.append(first_action) # We add the max scores of the second move to the first move to traverse forwards. Because a first move is needed to get to the second
+                    # After scores are calculated, reset the states so next actions can be checked
+
+                    self.reset_state(second_action)
+                self.reset_state(first_action)
+            
+            bestAction = actions[np.argmax(scores)]
+            if max(scores) > self.best_score:
+                self.best_score = max(scores)
                 bestAction = action
+                bestAction()
+                return bestAction
+            else:
+                bestAction() # Then just go with the best action
+                return bestAction
 
-
-        print(bestAction, "Reward = ", reward, "\n", "New completed faces = ", new_state.count_completed_faces(), "\n", "New correct pieces = " , new_state.count_correct_pieces())
-
-        return bestAction
+        # print(bestAction, "Reward = ", reward, "\n", "New completed faces = ", new_state.count_completed_faces(), "\n", "New correct pieces = " , new_state.count_correct_pieces())
+        # print(self.best_score)
+        
+        # self.reset_state(action)
 
     def checkCompletion(self):
         # Check if every side contains only one color
         if len(list(set(list(self.faces['F'])))) == 1 & len(list(set(list(self.faces['L'])))) == 1 & len(list(set(list(self.faces['B'])))) == 1 & len(list(set(list(self.faces['R'])))) == 1 & len(list(set(list(self.faces['D'])))) == 1 & len(list(set(list(self.faces['T'])))) == 1:
             print("\n***\nRubiks completed!\n***\n")
+            self.completed = True
             return True
         else:
-            # printRubiks(self)
+            self.completed = False
             return False
         
     def count_completed_faces(self):
@@ -183,26 +300,59 @@ class Rubiks:
 
 
 cube = Rubiks("WWWWWWWWWYYYYYYYYYOOOOOOOOORRRRRRRRRGGGGGGGGGBBBBBBBBB")
-printRubiks(cube)
+# cube.move_B()
+# cube.move_D_prime()
+# cube.move_L_prime()
+# cube.move_F_prime()
+
+# printRubiks(cube)
 # cube.checkCompletion()
 cube.scramble(1)
 
+x = cube.count_completed_faces()
+y = cube.count_correct_pieces()
+print("Completed faces =", x , "\n"
+        "Completed pieces = ", y, "\n")
+
+cube.best_score = (5 * cube.count_completed_faces() ) + 2 * cube.count_correct_pieces()  # Weighted score
+
 Completed = False
-max_moves = 25
+max_moves = 64
 moves = 0
 
-while Completed == False:
-    print(moves)
+
+print("*** Starting Rubiks ***\n")
+printRubiks(cube)
+print("*** Starting Rubiks ***\n")
+
+cube.completed = cube.checkCompletion()
+
+print("*** Starting score ***\n", str(cube.best_score))
+while cube.completed == False:
+    print("\nMove #", moves + 1, "\n")
+
+    cube.check_best_next_move(x, y)
+    print("New score = ", str(cube.best_score))
+
     x = cube.count_completed_faces()
     y = cube.count_correct_pieces()
-    print(x,y)
-    printRubiks(cube)
-
-    nbm = cube.check_best_next_move(x, y)
-    nbm()
+    print("Completed faces =", x , "\n"
+          "Completed pieces = ", y, "\n")
 
     moves = moves + 1
-    Completed = cube.checkCompletion()
-    if moves >= max_moves:
-        print("Could not solve cube in ", str(max_moves), "moves.")
-        Completed = True
+
+    # print(cube.checkCompletion())
+    # cube.checkCompletion()
+
+    if cube.completed == True:
+        print("***\nSolving COMPLETED!\n***\n Rubiks cube solved in", str(moves), " moves.")
+        break
+
+    elif cube.completed == False:
+        if moves >= max_moves:
+            print("Solving FALED. Could not solve cube in", str(moves), "moves.")
+            printRubiks(cube)
+            break
+        else:
+            continue
+        
