@@ -14,7 +14,7 @@ def scramble_cube_string():
 cube = Cube.Rubiks("WWWWWWWWWYYYYYYYYYOOOOOOOOORRRRRRRRRGGGGGGGGGBBBBBBBBB")
 # cube.scramble(1)
 
-MAX_MOVES = 7
+MAX_MOVES = 6
 NEW_HEURISTICS = False
 HEURISTIC_FILE = 'heuristic.json'
 
@@ -55,9 +55,9 @@ if h_db is None or NEW_HEURISTICS is True:
         )
 #--------------------------------
 print('----------')
-# cube.scramble(3)
+cube.scramble(1)
 
-cube = Cube.Rubiks(scramble_cube_string())
+# cube = Cube.Rubiks(scramble_cube_string())
 
 # for i in range (0,12):
 #     cube.random_move()
